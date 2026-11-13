@@ -187,7 +187,12 @@
       ['Potencia', c.cv ? c.cv + ' CV' : 'Consultar'], ['Carrocería', c.carroceria]
     ];
     $('.ficha', fichaDlg).innerHTML = `
-      <div class="ficha__media"><img src="${c.foto.lg}" alt="${esc(titulo(c))}" referrerpolicy="no-referrer"></div>
+      <div class="ficha__media" style="position:relative;user-select:none">
+        <img id="ficha-main-img" src="${c.foto.lg}" alt="${esc(titulo(c))}" referrerpolicy="no-referrer">
+        <button type="button" id="ficha-prev" aria-label="Foto anterior" style="display:none;position:absolute;left:12px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(15,23,42,.75);color:#fff;font-size:22px;cursor:pointer;z-index:2">‹</button>
+        <button type="button" id="ficha-next" aria-label="Siguiente foto" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(15,23,42,.75);color:#fff;font-size:22px;cursor:pointer;z-index:2">›</button>
+        <span id="ficha-counter" style="display:none;position:absolute;bottom:12px;right:12px;background:rgba(15,23,42,.78);color:#fff;padding:4px 10px;border-radius:999px;font-size:.82rem;font-weight:600;z-index:2">1 / 1</span>
+      </div>
       <div class="ficha__body">
         <div>
           <span class="eyebrow">${esc(c.carroceria)} · ${c.anio}</span>
@@ -200,13 +205,40 @@
         <div class="ficha__actions">
           <button class="btn btn--accent" type="button" data-interesa="${c.id}">Me interesa este coche</button>
           <a class="btn btn--ghost" href="tel:${S.telefonoHref}">${ICON.phone} Llamar · ${S.telefono}</a>
-          ${S.financiacion ? `<a class="link-arrow" style="justify-self:start;margin-top:6px" href="index.html?coche=${c.id}#financiacion">Simular la financiación de este coche</a>` : ''}
         </div>
         <p class="ficha__fine">Garantía mínima de 12 meses según la Ley General para la Defensa de los Consumidores y Usuarios (RDL 1/2007). Datos según el anuncio; compruébalos con nosotros antes de la compra. Las fotos son del propio vehículo.</p>
       </div>`;
+
+    const galeria = [c.foto.lg];
+    let fotoIdx = 0;
+    const imgEl = $('#ficha-main-img', fichaDlg);
+    const prevBtn = $('#ficha-prev', fichaDlg);
+    const nextBtn = $('#ficha-next', fichaDlg);
+    const countEl = $('#ficha-counter', fichaDlg);
+    const actualizarGaleria = () => {
+      imgEl.src = galeria.at(fotoIdx);
+      if (galeria.length > 1) {
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'block';
+        countEl.style.display = 'inline-block';
+        countEl.textContent = (fotoIdx + 1) + ' / ' + galeria.length;
+      }
+    };
+    prevBtn.onclick = () => { fotoIdx = (fotoIdx - 1 + galeria.length) % galeria.length; actualizarGaleria(); };
+    nextBtn.onclick = () => { fotoIdx = (fotoIdx + 1) % galeria.length; actualizarGaleria(); };
+    const buscarExtra = (num) => {
+      if (num > 12) return;
+      const url = 'img/coches/' + c.id + '-' + num + '.jpg';
+      const test = new Image();
+      test.onload = () => { galeria.push(url); actualizarGaleria(); buscarExtra(num + 1); };
+      test.src = url;
+    };
+    buscarExtra(2);
+
     if (!fichaDlg.open) fichaDlg.showModal();
     if (location.pathname.endsWith('coches.html')) history.replaceState(null, '', '#' + c.id);
   }
+
 
   /* ---------- Contacto (modal) ---------- */
   function toast(msg) {
