@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Privado — Automóviles Sardi</title>
+<style>
+  :root { --bg: #0f172a; --card: #1e293b; --accent: #dc2626; --green: #16a34a; --text: #f8fafc; --muted: #94a3b8; --border: #334155; }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); padding: 16px; max-width: 720px; margin-inline: auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 0 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 10px; }
+  input, select, textarea { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 1rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  button { width: 100%; padding: 13px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; color: white; }
+  .btn-primary { background: var(--green); }
+  .btn-dark { background: #334155; }
+  .btn-del { background: var(--accent); padding: 8px 12px; font-size: 0.85rem; width: auto; margin: 0; }
+  .btn-edit { background: #2563eb; padding: 8px 12px; font-size: 0.85rem; width: auto; margin: 0; }
+  .car-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .car-item:last-child { border-bottom: none; }
+  .car-item img { width: 72px; height: 54px; object-fit: cover; border-radius: 6px; background: #0f172a; }
+  .car-info { flex: 1; }
+  .car-title { font-weight: 700; font-size: 0.98rem; }
+  .car-meta { font-size: 0.82rem; color: var(--muted); }
+  .car-actions { display: flex; gap: 6px; }
+  #status { padding: 12px; border-radius: 8px; margin-bottom: 14px; display: none; font-weight: 600; font-size: 0.92rem; }
+  .ok { background: #14532d; color: #bbf7d0; border: 1px solid #16a34a; }
+  .err { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
+  .loading { background: #1e3a8a; color: #bfdbfe; border: 1px solid #3b82f6; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+  <h1>Automóviles Sardi — Panel Móvil</h1>
+  <div class="sub">Gestiona tus coches y fotos directo en automovilessardi.es</div>
+
+  <div id="status"></div>
+
+  <div class="card" id="loginCard">
+    <h2>1. Conectar con tu llave secreta</h2>
+    <label>Pega tu token de GitHub (github_pat_...)</label>
+    <input type="password" id="tokenInput" placeholder="github_pat_...">
+    <button class="btn-primary" onclick="conectar()">Conectar y cargar coches</button>
+  </div>
+
+  <div id="panelArea" class="hidden">
+    <div class="card">
+      <h2 id="formTitle">Añadir coche nuevo</h2>
+      <input type="hidden" id="editIndex" value="-1">
+
+      <div class="grid">
+        <div>
+          <label>Marca *</label>
+          <input type="text" id="marca" placeholder="Ej: Peugeot">
+        </div>
+        <div>
+          <label>Modelo *</label>
+          <input type="text" id="modelo" placeholder="Ej: 5008">
+        </div>
+      </div>
+
+      <label>Versión / Motor</label>
+      <input type="text" id="version" placeholder="Ej: 1.6 BlueHDi 120cv">
+
+      <div class="grid">
+        <div>
+          <label>Año *</label>
+          <input type="number" id="anio" placeholder="Ej: 2018">
+        </div>
+        <div>
+          <label>Kilómetros *</label>
+          <input type="number" id="km" placeholder="Ej: 115000">
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Combustible</label>
+          <select id="combustible">
+            <option value="Diésel">Diésel</option>
+            <option value="Gasolina">Gasolina</option>
+            <option value="Híbrido">Híbrido</option>
+            <option value="Eléctrico">Eléctrico</option>
+            <option value="GLP">GLP</option>
+          </select>
+        </div>
+        <div>
+          <label>Cambio</label>
+          <select id="cambio">
+            <option value="Manual">Manual</option>
+            <option value="Automático">Automático</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Potencia (CV)</label>
+          <input type="number" id="cv" placeholder="Ej: 120">
+        </div>
+        <div>
+          <label>Precio (€) *</label>
+          <input type="number" id="precio" placeholder="Ej: 12900">
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Carrocería</label>
+          <select id="carroceria">
+            <option value="Turismo">Turismo</option>
+            <option value="SUV / 4x4">SUV / 4x4</option>
+            <option value="Monovolumen">Monovolumen</option>
+            <option value="Familiar">Familiar</option>
+            <option value="Utilitario">Utilitario</option>
+            <option value="Furgoneta">Furgoneta</option>
+          </select>
+        </div>
+        <div>
+          <label>Tipo (filtro web)</label>
+          <select id="tipo">
+            <option value="turismo">turismo</option>
+            <option value="suv">suv</option>
+            <option value="furgoneta">furgoneta</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Foto principal del coche (galería o cámara)</label>
+      <input type="file" id="fotoFile" accept="image/*">
+
+      <button class="btn-primary" id="saveBtn" onclick="guardarCoche()">Publicar coche en la web</button>
+      <button class="btn-dark hidden" id="cancelBtn" onclick="resetForm()">Cancelar edición</button>
+    </div>
+
+    <div class="card">
+      <h2>Coches publicados (<span id="count">0</span>)</h2>
+      <div id="carList"></div>
+    </div>
+
+    <button class="btn-dark" onclick="cerrarSesion()">Cambiar llave secreta</button>
+  </div>
+
+<script>
+  const OWNER = 'AutoSardi';
+  const REPO = 'WEB-AUTOSARDI';
+  const DATA_PATH = 'web/js/data.js';
+  let TOKEN = localStorage.getItem('sardi_gh_token') || '';
+  let coches = [];
+  let dataSha = '';
+
+  if (TOKEN) {
+    document.getElementById('tokenInput').value = TOKEN;
+    conectar();
+  }
+
+  function msg(text, type = 'loading') {
+    const el = document.getElementById('status');
+    el.textContent = text;
+    el.className = type;
+    el.style.display = 'block';
+  }
+
+  function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
+  }
+
+  function b64DecodeUnicode(str) {
+    return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+
+  async function ghApi(path, method = 'GET', body = null) {
+    const opts = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?t=${Date.now()}`, opts);
+    if (!res.ok) throw new Error(`Error GitHub (${res.status})`);
+    return res.json();
+  }
+
+  async function conectar() {
+    TOKEN = document.getElementById('tokenInput').value.trim();
+    if (!TOKEN) return msg('Pega primero tu llave secreta.', 'err');
+    msg('Conectando y leyendo coches...', 'loading');
+    try {
+      const file = await ghApi(DATA_PATH);
+      dataSha = file.sha;
+      const content = b64DecodeUnicode(file.content.replace(/
+/g, ''));
+      const match = content.match(/window\.COCHES\s*=\s*(\[[\s\S]*?\]);/);
+      if (!match) throw new Error('No se pudo leer la lista de coches en data.js');
+      coches = JSON.parse(match[1]);
+      localStorage.setItem('sardi_gh_token', TOKEN);
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('panelArea').classList.remove('hidden');
+      renderList();
+      msg('Conectado correctamente. Ya puedes gestionar tus coches.', 'ok');
+    } catch (e) {
+      msg('No se pudo conectar. Revisa que tu token tenga permiso Contents: Read and write.', 'err');
+    }
+  }
+
+  function renderList() {
+    document.getElementById('count').textContent = coches.length;
+    const list = document.getElementById('carList');
+    list.innerHTML = '';
+    coches.forEach((c, idx) => {
+      const precioVal = c.precio || c.precioso || 0;
+      const anioVal = c.anio || c.Anio || '';
+      const div = document.createElement('div');
+      div.className = 'car-item';
+      div.innerHTML = `
+        <img src="img/coches/${c.id}-sm.jpg?v=${Date.now()}" onerror="this.src='img/coches/${c.id}.jpg'">
+        <div class="car-info">
+          <div class="car-title">${c.marca} ${c.modelo}</div>
+          <div class="car-meta">${anioVal} · ${Number(c.km).toLocaleString('es-ES')} km · ${Number(precioVal).toLocaleString('es-ES')} €</div>
+        </div>
+        <div class="car-actions">
+          <button class="btn-edit" onclick="editarCoche(${idx})">Editar</button>
+          <button class="btn-del" onclick="borrarCoche(${idx})">Borrar</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function editarCoche(idx) {
+    const c = coches[idx];
+    document.getElementById('editIndex').value = idx;
+    document.getElementById('formTitle').textContent = `Editando: ${c.marca} ${c.modelo}`;
+    document.getElementById('marca').value = c.marca || '';
+    document.getElementById('modelo').value = c.modelo || '';
+    document.getElementById('version').value = c.version || c['versión'] || '';
+    document.getElementById('anio').value = c.anio || c.Anio || '';
+    document.getElementById('km').value = c.km || '';
+    document.getElementById('combustible').value = c.combustible || 'Diésel';
+    document.getElementById('cambio').value = c.cambio || 'Manual';
+    document.getElementById('cv').value = c.cv || c.CV || '';
+    document.getElementById('precio').value = c.precio || c.precioso || '';
+    document.getElementById('carroceria').value = c.carroceria || 'Turismo';
+    document.getElementById('tipo').value = c.tipo || 'turismo';
+    document.getElementById('saveBtn').textContent = 'Guardar cambios';
+    document.getElementById('cancelBtn').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('editIndex').value = '-1';
+    document.getElementById('formTitle').textContent = 'Añadir coche nuevo';
+    ['marca','modelo','version','anio','km','cv','precio','fotoFile'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('saveBtn').textContent = 'Publicar coche en la web';
+    document.getElementById('cancelBtn').classList.add('hidden');
+  }
+
+  function resizeImage(file, maxWidth) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxWidth / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPhoto(path, base64Content) {
+    let sha = null;
+    try {
+      const existing = await ghApi(path);
+      sha = existing.sha;
+    } catch (_) {}
+    const payload = { message: `Subir foto ${path}`, content: base64Content };
+    if (sha) payload.sha = sha;
+    await ghApi(path, 'PUT', payload);
+  }
+
+  function slugify(text) {
+    return text.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  async function guardarCoche() {
+    const marca = document.getElementById('marca').value.trim();
+    const modelo = document.getElementById('modelo').value.trim();
+    const anio = Number(document.getElementById('anio').value);
+    const km = Number(document.getElementById('km').value);
+    const precio = Number(document.getElementById('precio').value);
+    const editIdx = Number(document.getElementById('editIndex').value);
+    const fileInput = document.getElementById('fotoFile');
+
+    if (!marca || !modelo || !anio || !precio) {
+      return msg('Rellena al menos Marca, Modelo, Año y Precio.', 'err');
+    }
+    if (editIdx === -1 && fileInput.files.length === 0) {
+      return msg('Selecciona una foto del coche antes de publicar.', 'err');
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+
+    try {
+      const id = editIdx >= 0 ? coches[editIdx].id : `${slugify(marca)}-${slugify(modelo)}-${anio}`;
+      if (fileInput.files.length > 0) {
+        msg('Procesando y subiendo fotos...', 'loading');
+        const file = fileInput.files[0];
+        const lgB64 = await resizeImage(file, 1280);
+        const smB64 = await resizeImage(file, 480);
+        await uploadPhoto(`web/img/coches/${id}.jpg`, lgB64);
+        await uploadPhoto(`web/img/coches/${id}-sm.jpg`, smB64);
+      }
+
+      const nuevo = {
+        id,
+        marca,
+        modelo,
+        version: document.getElementById('version').value.trim(),
+        anio,
+        km,
+        combustible: document.getElementById('combustible').value,
+        cambio: document.getElementById('cambio').value,
+        cv: Number(document.getElementById('cv').value) || 0,
+        carroceria: document.getElementById('carroceria').value,
+        tipo: document.getElementById('tipo').value,
+        precio
+      };
+
+      if (editIdx >= 0) coches[editIdx] = nuevo;
+      else coches.push(nuevo);
+
+      await syncDataJs('Actualizar catálogo de coches desde móvil');
+      resetForm();
+      renderList();
+      msg('¡Listo! Publicado en la web (tarda unos 20 segundos en verse).', 'ok');
+    } catch (e) {
+      msg('Error al guardar: ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function borrarCoche(idx) {
+    const c = coches[idx];
+    if (!confirm(`¿Seguro que quieres borrar el ${c.marca} ${c.modelo}?`)) return;
+    msg('Borrando coche de la web...', 'loading');
+    try {
+      coches.splice(idx, 1);
+      await syncDataJs(`Borrar ${c.marca} ${c.modelo}`);
+      renderList();
+      msg('Coche eliminado de la web.', 'ok');
+    } catch (e) {
+      msg('Error al borrar: ' + e.message, 'err');
+    }
+  }
+
+  async function syncDataJs(commitMsg) {
+    msg('Guardando cambios en data.js...', 'loading');
+    const latest = await ghApi(DATA_PATH);
+    dataSha = latest.sha;
+    const raw = b64DecodeUnicode(latest.content.replace(/
+/g, ''));
+    const newJson = JSON.stringify(coches, null, 2);
+    const updated = raw.replace(/window\.COCHES\s*=\s*\[[\s\S]*?\];/, `window.COCHES = ${newJson};`);
+    const res = await ghApi(DATA_PATH, 'PUT', {
+      message: commitMsg,
+      content: b64EncodeUnicode(updated),
+      sha: dataSha
+    });
+    dataSha = res.content.sha;
+  }
+
+  function cerrarSesion() {
+    localStorage.removeItem('sardi_gh_token');
+    location.reload();
+  }
+</script>
+</body>
+</html>
