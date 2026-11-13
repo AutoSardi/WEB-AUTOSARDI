@@ -173,6 +173,31 @@ window.COCHES = [
       "img/coches/volkswagen-tiguan-rline-2015-2.jpg",
       "img/coches/volkswagen-tiguan-rline-2015-3.jpg"
     ]
+  },
+  {
+    "id": "peugeot-207-2007",
+    "marca": "Peugeot",
+    "modelo": "207",
+    "version": "1.4hdi",
+    "anio": 2007,
+    "km": 228000,
+    "combustible": "Diésel",
+    "cambio": "Manual",
+    "cv": 80,
+    "carroceria": "Turismo",
+    "tipo": "turismo",
+    "precio": 2999,
+    "fotos": [
+      "img/coches/peugeot-207-2007.jpg",
+      "img/coches/peugeot-207-2007-2.jpg",
+      "img/coches/peugeot-207-2007-3.jpg",
+      "img/coches/peugeot-207-2007-4.jpg",
+      "img/coches/peugeot-207-2007-5.jpg",
+      "img/coches/peugeot-207-2007-6.jpg",
+      "img/coches/peugeot-207-2007-7.jpg",
+      "img/coches/peugeot-207-2007-8.jpg",
+      "img/coches/peugeot-207-2007-9.jpg"
+    ]
   }
 ];
 
