@@ -124,6 +124,36 @@ window.COCHES = [
     "tipo": "turismo",
     "precio": 7500,
     "nota": ""
+  },
+  {
+    "id": "peugeot-5008-2017",
+    "marca": "Peugeot",
+    "modelo": "5008",
+    "version": "1.6 BLUEHDI 88Kw 120CV",
+    "anio": 2017,
+    "km": 141000,
+    "combustible": "Diésel",
+    "cambio": "Manual",
+    "cv": 120,
+    "carroceria": "Utilitario",
+    "tipo": "turismo",
+    "precio": 8500,
+    "nota": ""
+  },
+  {
+    "id": "fiat-500l-2014",
+    "marca": "Fiat",
+    "modelo": "500L",
+    "version": "1.3 16V MULTIYET II",
+    "anio": 2014,
+    "km": 165000,
+    "combustible": "Diésel",
+    "cambio": "Manual",
+    "cv": 83,
+    "carroceria": "Utilitario",
+    "tipo": "turismo",
+    "precio": 5999,
+    "nota": ""
   }
 ];
 
