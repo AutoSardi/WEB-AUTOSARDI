@@ -154,6 +154,25 @@ window.COCHES = [
     "tipo": "turismo",
     "precio": 5999,
     "nota": ""
+  },
+  {
+    "id": "volkswagen-tiguan-rline-2015",
+    "marca": "Volkswagen",
+    "modelo": "Tiguan Rline",
+    "version": "2.0 TDI",
+    "anio": 2015,
+    "km": 190000,
+    "combustible": "Diésel",
+    "cambio": "Automático",
+    "cv": 140,
+    "carroceria": "Turismo",
+    "tipo": "turismo",
+    "precio": 13999,
+    "fotos": [
+      "img/coches/volkswagen-tiguan-rline-2015.jpg",
+      "img/coches/volkswagen-tiguan-rline-2015-2.jpg",
+      "img/coches/volkswagen-tiguan-rline-2015-3.jpg"
+    ]
   }
 ];
 
