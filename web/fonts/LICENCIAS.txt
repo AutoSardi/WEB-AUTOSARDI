@@ -1,0 +1,10 @@
+Fuentes incluidas en esta web
+
+- Archivo (Omnibus-Type)          https://fonts.google.com/specimen/Archivo
+- Manrope (Mikhail Sharanda)      https://fonts.google.com/specimen/Manrope
+- Permanent Marker (Font Diner)   https://fonts.google.com/specimen/Permanent+Marker
+
+Archivo y Manrope se distribuyen con la licencia SIL Open Font License 1.1
+(https://openfontlicense.org). Permanent Marker, con la licencia Apache 2.0
+(https://www.apache.org/licenses/LICENSE-2.0). Las dos permiten usarlas en webs
+comerciales sin coste.
