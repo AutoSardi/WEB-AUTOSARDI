@@ -13,11 +13,12 @@
   .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
   label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 10px; }
-  input, select { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 1rem; }
+  input, select, textarea { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 1rem; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
-  button { width: 100%; padding: 13px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; color: white; }
+  button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; color: white; }
   .btn-primary { background: var(--green); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-dark { background: #334155; }
   .btn-del { background: var(--accent); padding: 8px 12px; font-size: 0.85rem; width: auto; margin: 0; }
   .btn-edit { background: #2563eb; padding: 8px 12px; font-size: 0.85rem; width: auto; margin: 0; }
@@ -28,10 +29,12 @@
   .car-title { font-weight: 700; font-size: 0.98rem; }
   .car-meta { font-size: 0.82rem; color: var(--muted); }
   .car-actions { display: flex; gap: 6px; }
-  #status { padding: 12px; border-radius: 8px; margin-bottom: 14px; display: none; font-weight: 600; font-size: 0.92rem; }
+  .msg-box { padding: 12px; border-radius: 8px; margin-top: 12px; display: none; font-weight: 600; font-size: 0.92rem; }
   .ok { background: #14532d; color: #bbf7d0; border: 1px solid #16a34a; }
   .err { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
   .loading { background: #1e3a8a; color: #bfdbfe; border: 1px solid #3b82f6; }
+  .preview-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .preview-row img { width: 68px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
   .hidden { display: none; }
 </style>
 </head>
@@ -40,12 +43,11 @@
   <h1>Automóviles Sardi — Panel Móvil</h1>
   <div class="sub">Gestiona tus coches y fotos directo en automovilessardi.es</div>
 
-  <div id="status"></div>
-
   <div class="card" id="loginCard">
     <h2>1. Conectar con tu llave secreta</h2>
     <label>Pega tu token de GitHub (github_pat_...)</label>
     <input type="password" id="tokenInput" placeholder="github_pat_...">
+    <div id="loginStatus" class="msg-box"></div>
     <button type="button" class="btn-primary" id="btnConnect">Conectar y cargar coches</button>
   </div>
 
@@ -75,7 +77,7 @@
         </div>
         <div>
           <label>Kilómetros *</label>
-          <input type="number" id="km" placeholder="Ej: 115000">
+          <input type="text" id="km" placeholder="Ej: 115000">
         </div>
       </div>
 
@@ -106,7 +108,7 @@
         </div>
         <div>
           <label>Precio (€) *</label>
-          <input type="number" id="precio" placeholder="Ej: 12900">
+          <input type="text" id="precio" placeholder="Ej: 12900">
         </div>
       </div>
 
@@ -132,8 +134,11 @@
         </div>
       </div>
 
-      <label>Foto principal del coche (galería o cámara)</label>
-      <input type="file" id="fotoFile" accept="image/*">
+      <label>Fotos del coche (puedes elegir varias a la vez; la 1ª será la portada) *</label>
+      <input type="file" id="fotoFile" accept="image/*" multiple>
+      <div id="previewRow" class="preview-row"></div>
+
+      <div id="formStatus" class="msg-box"></div>
 
       <button type="button" class="btn-primary" id="saveBtn">Publicar coche en la web</button>
       <button type="button" class="btn-dark hidden" id="cancelBtn">Cancelar edición</button>
@@ -141,6 +146,7 @@
 
     <div class="card">
       <h2>Coches publicados (<span id="count">0</span>)</h2>
+      <div id="listStatus" class="msg-box"></div>
       <div id="carList"></div>
     </div>
 
@@ -155,11 +161,17 @@
   let coches = [];
   let dataSha = '';
 
-  function msg(text, type) {
-    const el = document.getElementById('status');
+  function showMsg(boxId, text, type) {
+    const el = document.getElementById(boxId);
     el.textContent = text;
-    el.className = type || 'loading';
+    el.className = 'msg-box ' + (type || 'loading');
     el.style.display = 'block';
+  }
+
+  function cleanNum(val) {
+    if (!val) return 0;
+    const digits = String(val).replace(/[^0-9]/g, '');
+    return digits ? Number(digits) : 0;
   }
 
   function b64EncodeUnicode(str) {
@@ -194,8 +206,8 @@
 
   async function conectar() {
     TOKEN = document.getElementById('tokenInput').value.trim();
-    if (!TOKEN) return msg('Pega primero tu llave secreta.', 'err');
-    msg('Conectando y leyendo coches...', 'loading');
+    if (!TOKEN) return showMsg('loginStatus', 'Pega primero tu llave secreta.', 'err');
+    showMsg('loginStatus', 'Conectando y leyendo coches...', 'loading');
     try {
       const file = await ghApi(DATA_PATH);
       dataSha = file.sha;
@@ -209,9 +221,8 @@
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('panelArea').classList.remove('hidden');
       renderList();
-      msg('Conectado correctamente. Ya puedes gestionar tus coches.', 'ok');
     } catch (e) {
-      msg('Error al conectar: ' + e.message, 'err');
+      showMsg('loginStatus', 'Error al conectar: ' + e.message, 'err');
     }
   }
 
@@ -222,13 +233,14 @@
     coches.forEach(function(c, idx) {
       const precioVal = c.precio || c.precioso || 0;
       const anioVal = c.anio || c.Anio || '';
+      const numFotos = Array.isArray(c.fotos) ? c.fotos.length : 1;
       const div = document.createElement('div');
       div.className = 'car-item';
       div.innerHTML =
         '<img src="img/coches/' + c.id + '-sm.jpg?v=' + Date.now() + '" onerror="this.src=\'img/coches/' + c.id + '.jpg\'">' +
         '<div class="car-info">' +
           '<div class="car-title">' + c.marca + ' ' + c.modelo + '</div>' +
-          '<div class="car-meta">' + anioVal + ' · ' + Number(c.km).toLocaleString('es-ES') + ' km · ' + Number(precioVal).toLocaleString('es-ES') + ' €</div>' +
+          '<div class="car-meta">' + anioVal + ' · ' + Number(c.km || 0).toLocaleString('es-ES') + ' km · ' + Number(precioVal).toLocaleString('es-ES') + ' € · ' + numFotos + ' foto(s)</div>' +
         '</div>' +
         '<div class="car-actions">' +
           '<button type="button" class="btn-edit" data-idx="' + idx + '">Editar</button>' +
@@ -245,8 +257,19 @@
     });
   }
 
+  document.getElementById('fotoFile').onchange = function() {
+    const row = document.getElementById('previewRow');
+    row.innerHTML = '';
+    const files = this.files;
+    for (let i = 0; i < files.length; i++) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(files.item(i));
+      row.appendChild(img);
+    }
+  };
+
   function editarCoche(idx) {
-    const c = coches[idx];
+    const c = coches.at(idx);
     document.getElementById('editIndex').value = idx;
     document.getElementById('formTitle').textContent = 'Editando: ' + c.marca + ' ' + c.modelo;
     document.getElementById('marca').value = c.marca || '';
@@ -262,6 +285,7 @@
     document.getElementById('tipo').value = c.tipo || 'turismo';
     document.getElementById('saveBtn').textContent = 'Guardar cambios';
     document.getElementById('cancelBtn').classList.remove('hidden');
+    document.getElementById('formStatus').style.display = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -271,6 +295,7 @@
     ['marca','modelo','version','anio','km','cv','precio','fotoFile'].forEach(function(id) {
       document.getElementById(id).value = '';
     });
+    document.getElementById('previewRow').innerHTML = '';
     document.getElementById('saveBtn').textContent = 'Publicar coche en la web';
     document.getElementById('cancelBtn').classList.add('hidden');
   }
@@ -316,17 +341,17 @@
   async function guardarCoche() {
     const marca = document.getElementById('marca').value.trim();
     const modelo = document.getElementById('modelo').value.trim();
-    const anio = Number(document.getElementById('anio').value);
-    const km = Number(document.getElementById('km').value);
-    const precio = Number(document.getElementById('precio').value);
+    const anio = cleanNum(document.getElementById('anio').value);
+    const km = cleanNum(document.getElementById('km').value);
+    const precio = cleanNum(document.getElementById('precio').value);
     const editIdx = Number(document.getElementById('editIndex').value);
     const fileInput = document.getElementById('fotoFile');
 
     if (!marca || !modelo || !anio || !precio) {
-      return msg('Rellena al menos Marca, Modelo, Año y Precio.', 'err');
+      return showMsg('formStatus', 'Faltan datos: rellena Marca, Modelo, Año y Precio.', 'err');
     }
     if (editIdx === -1 && fileInput.files.length === 0) {
-      return msg('Selecciona una foto del coche antes de publicar.', 'err');
+      return showMsg('formStatus', 'Selecciona al menos 1 foto del coche antes de publicar.', 'err');
     }
 
     const btn = document.getElementById('saveBtn');
@@ -334,14 +359,29 @@
 
     try {
       const id = editIdx >= 0 ? coches.at(editIdx).id : slugify(marca) + '-' + slugify(modelo) + '-' + anio;
+      let listaFotos = (editIdx >= 0 && Array.isArray(coches.at(editIdx).fotos)) ? coches.at(editIdx).fotos.slice() : ['img/coches/' + id + '.jpg'];
+
       if (fileInput.files.length > 0) {
-        msg('Procesando y subiendo fotos...', 'loading');
-        const file = fileInput.files.item(0);
-        const lgB64 = await resizeImage(file, 1280);
-        const smB64 = await resizeImage(file, 480);
-        await uploadPhoto('web/img/coches/' + id + '.jpg', lgB64);
-        await uploadPhoto('web/img/coches/' + id + '-sm.jpg', smB64);
+        listaFotos = [];
+        const total = fileInput.files.length;
+        for (let i = 0; i < total; i++) {
+          showMsg('formStatus', 'Subiendo foto ' + (i + 1) + ' de ' + total + '...', 'loading');
+          const file = fileInput.files.item(i);
+          const lgB64 = await resizeImage(file, 1280);
+          if (i === 0) {
+            const smB64 = await resizeImage(file, 480);
+            await uploadPhoto('web/img/coches/' + id + '.jpg', lgB64);
+            await uploadPhoto('web/img/coches/' + id + '-sm.jpg', smB64);
+            listaFotos.push('img/coches/' + id + '.jpg');
+          } else {
+            const extraPath = 'img/coches/' + id + '-' + (i + 1) + '.jpg';
+            await uploadPhoto('web/' + extraPath, lgB64);
+            listaFotos.push(extraPath);
+          }
+        }
       }
+
+      showMsg('formStatus', 'Guardando anuncio en la web...', 'loading');
 
       const nuevo = {
         id: id,
@@ -352,21 +392,22 @@
         km: km,
         combustible: document.getElementById('combustible').value,
         cambio: document.getElementById('cambio').value,
-        cv: Number(document.getElementById('cv').value) || 0,
+        cv: cleanNum(document.getElementById('cv').value),
         carroceria: document.getElementById('carroceria').value,
         tipo: document.getElementById('tipo').value,
-        precio: precio
+        precio: precio,
+        fotos: listaFotos
       };
 
       if (editIdx >= 0) coches.splice(editIdx, 1, nuevo);
       else coches.push(nuevo);
 
-      await syncDataJs('Actualizar catálogo de coches desde móvil');
+      await syncDataJs('Publicar ' + marca + ' ' + modelo);
       resetForm();
       renderList();
-      msg('¡Listo! Publicado en la web (tarda unos 20 segundos en verse).', 'ok');
+      showMsg('formStatus', '¡LISTO! Anuncio publicado y añadido abajo en la lista (en 20s sale en automovilessardi.es).', 'ok');
     } catch (e) {
-      msg('Error al guardar: ' + e.message, 'err');
+      showMsg('formStatus', 'Error al publicar: ' + e.message, 'err');
     } finally {
       btn.disabled = false;
     }
@@ -375,19 +416,18 @@
   async function borrarCoche(idx) {
     const c = coches.at(idx);
     if (!confirm('¿Seguro que quieres borrar el ' + c.marca + ' ' + c.modelo + '?')) return;
-    msg('Borrando coche de la web...', 'loading');
+    showMsg('listStatus', 'Borrando ' + c.marca + ' ' + c.modelo + '...', 'loading');
     try {
       coches.splice(idx, 1);
       await syncDataJs('Borrar ' + c.marca + ' ' + c.modelo);
       renderList();
-      msg('Coche eliminado de la web.', 'ok');
+      showMsg('listStatus', 'Anuncio eliminado correctamente.', 'ok');
     } catch (e) {
-      msg('Error al borrar: ' + e.message, 'err');
+      showMsg('listStatus', 'Error al borrar: ' + e.message, 'err');
     }
   }
 
   async function syncDataJs(commitMsg) {
-    msg('Guardando cambios en data.js...', 'loading');
     const latest = await ghApi(DATA_PATH);
     dataSha = latest.sha;
     const raw = b64DecodeUnicode(latest.content.replace(/\n/g, ''));
@@ -418,4 +458,3 @@
 </script>
 </body>
 </html>
-
