@@ -89,11 +89,13 @@ window.COCHES = [
     "km": 340000,
     "combustible": "Diésel",
     "cambio": "Manual",
-    "cv": null,
+    "cv": 0,
     "carroceria": "Utilitario",
     "tipo": "turismo",
     "precio": 1750,
-    "nota": "El 1.4 HDi es de los motores más duros que hay. Coche para moverse barato."
+    "fotos": [
+      "img/coches/peugeot-206-2006.jpg"
+    ]
   },
   {
     "id": "peugeot-partner-2001",
